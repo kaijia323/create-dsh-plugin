@@ -83,4 +83,6 @@ git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\s
 
 ## 许可证
 
-技能指令（SKILL.md、evals/）由本仓库作者编写；`references/` 内容版权归 DeepSeek AI 官方文档所有，仅作参考用途转载。
+本仓库代码与技能指令（SKILL.md、evals/）采用 [MIT](LICENSE) 协议。
+
+`references/` 中的文档原文版权归 DeepSeek AI 官方文档所有，仅作参考用途转载。
