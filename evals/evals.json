@@ -1,0 +1,53 @@
+{
+  "skill_name": "create-dsh-plugin",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我在当前项目里创建一个 DSH 插件：给模型加一个 current_time 工具，返回当前 UTC 时间和时区偏移，description 写清楚参数。插件放在 plugins/current-time/ 下，给出对应的 cordis.yml 覆盖层和启动验证命令。",
+      "expected_output": "",
+      "files": [],
+      "assertions": [
+        "插件模块导出 apply 函数（函数或对象形态）",
+        "使用 @deepseek-ai/dsh-tools 的 defineTool",
+        "声明 inject: ['tools']",
+        "工具名为 current_time",
+        "工具带 description 说明",
+        "parameters 声明参数（type + description）",
+        "output 含 schema 与 render",
+        "execute 返回 UTC 时间（toISOString/getTimezoneOffset）",
+        "cordis.yml 用 - insert 绝对路径引用插件",
+        "给出 dsh web --patch 启动命令"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "写一个 DSH 事件日志插件：监听 tools/result 事件，把每次工具调用的名字、参数和结果内容（截断到 maxLength）打印到终端；maxLength 必须能通过 cordis.yml 配置，默认 100 字符。",
+      "expected_output": "",
+      "files": [],
+      "assertions": [
+        "导出 Config 类型与同名 schema",
+        "maxLength 配置默认 100",
+        "使用 @deepseek-ai/schemastery 的 Schema.object",
+        "监听 tools/result 事件",
+        "结果按 config.maxLength 截断",
+        "apply 接收 config 第二参数",
+        "cordis.yml 示例含 config.maxLength"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "把我写的 hello 插件打包成可安装的 DSH bundle：给出 package.json（声明 dsh.bundle）、插件入口 JS、cordis.patch.yml，并说明用户如何用 dsh plugin --profile demo add 安装、配置层序如何生效、Git 安装时的 prepare 脚本与 allowBuilds 注意事项。",
+      "expected_output": "",
+      "files": [],
+      "assertions": [
+        "package.json 声明 dsh.bundle（含 patch）",
+        "cordis.patch.yml 按包名引用插件行",
+        "提供插件入口 index.js（name + apply）",
+        "说明 dsh plugin --profile demo add 安装",
+        "层序正确：bundles → profile patch → $DSH_HOME → --patch",
+        "说明 patch 整行/整体替换 config 而非深合并",
+        "Git 安装陷阱：prepare 脚本 + allowBuilds"
+      ]
+    }
+  ]
+}
