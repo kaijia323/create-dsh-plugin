@@ -73,7 +73,22 @@ git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\s
 
 ## 测试与评估
 
-`evals/evals.json` 包含 3 个评估用例（工具插件 / 事件日志插件 / bundle 打包），每个用例都有可程序化检查的断言。
+`evals/evals.json` 包含 6 个评估用例（工具插件 / 事件日志插件 / bundle 打包 / LLM 适配器 / Fiber 诊断 / 权限门禁钩子），每个用例都有可程序化检查的断言。
+
+### iteration-2 结果（44 条断言 × 2 配置 = 88 项检查，新技能 vs 旧版快照）
+
+| 指标 | with_skill（新版） | old_skill（快照） | 差异 |
+|---|---|---|---|
+| 断言通过率 | 100% (44/44) | 100% (44/44) | — |
+| 平均 token | 11.9 万 | 13.5 万 | **-12%** |
+| 平均耗时 | 125.1s | 179.1s | **-30%** |
+
+要点：
+
+- 断言层面无区分度，但**语义层面有实质差异**（grader 深度复核）：eval-5（Fiber 诊断）旧技能输出含 2 处平台事实错误——声称"DSH 没有 timer 服务"（实际 `@deepseek-ai/cordis-plugin-timer` 存在且 dsh-base 默认挂载）、FiberState 枚举值 UNLOADING/DISPOSED 写反；新技能两者均正确，正是新增 `references/framework.md` 的价值。
+- 效率收益集中在新增内容：eval-6（权限门禁，旧技能无 guard 文档）-51% 耗时、-30% token；eval-2（事件日志）-55% 耗时。
+- eval-4（LLM 适配器）是唯一持平用例（-11% 耗时、token 持平）：适配器复杂度本身主导成本，两配置都交付了完整实现。
+- iteration-2 对应 DSH 0.1.0-rc.7：事件五种模式（含 `parallel`）、Fiber 状态机、LLM 适配器协议、`!!js` 计算配置、`guard`/`restrict`、Code Mode 与 UI 卡片契约。
 
 ### iteration-1 结果（24 条断言 × 2 配置 = 48 项检查）
 
