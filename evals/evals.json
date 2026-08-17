@@ -3,6 +3,7 @@
   "evals": [
     {
       "id": 1,
+      "name": "current-time-tool",
       "prompt": "帮我在当前项目里创建一个 DSH 插件：给模型加一个 current_time 工具，返回当前 UTC 时间和时区偏移，description 写清楚参数。插件放在 plugins/current-time/ 下，给出对应的 cordis.yml 覆盖层和启动验证命令。",
       "expected_output": "",
       "files": [],
@@ -21,6 +22,7 @@
     },
     {
       "id": 2,
+      "name": "event-logger",
       "prompt": "写一个 DSH 事件日志插件：监听 tools/result 事件，把每次工具调用的名字、参数和结果内容（截断到 maxLength）打印到终端；maxLength 必须能通过 cordis.yml 配置，默认 100 字符。",
       "expected_output": "",
       "files": [],
@@ -36,6 +38,7 @@
     },
     {
       "id": 3,
+      "name": "bundle-packaging",
       "prompt": "把我写的 hello 插件打包成可安装的 DSH bundle：给出 package.json（声明 dsh.bundle）、插件入口 JS、cordis.patch.yml，并说明用户如何用 dsh plugin --profile demo add 安装、配置层序如何生效、Git 安装时的 prepare 脚本与 allowBuilds 注意事项。",
       "expected_output": "",
       "files": [],
@@ -47,6 +50,53 @@
         "层序正确：bundles → profile patch → $DSH_HOME → --patch",
         "说明 patch 整行/整体替换 config 而非深合并",
         "Git 安装陷阱：prepare 脚本 + allowBuilds"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "llm-adapter",
+      "prompt": "写一个 DSH LLM 适配器插件，为 my-provider 接入一个流式模型：继承 LlmAdapter 实现 stream()，按 StreamChunk 协议产出分片（block-start → text-delta → block-end，最后 usage 再 finish）；apiKey 和 providers 通过 Config 配置，用 ctx.llm.registerAdapter 注册；HTTP 故障抛带稳定 code 的 LlmError 并合并 attributionHeaders。",
+      "expected_output": "",
+      "files": [],
+      "assertions": [
+        "从 @deepseek-ai/dsh-llm 导入 LlmAdapter",
+        "类继承 LlmAdapter 并实现 stream() 异步生成器",
+        "stream 产出 StreamChunk 协议分片（block-start/text-delta/block-end）",
+        "分片以 finish 结尾",
+        "声明 inject: ['llm']",
+        "导出 Config 类型与同名 schema（apiKey 必填、providers 数组）",
+        "apply 中 ctx.llm.registerAdapter 注册",
+        "错误处理：LlmError 带稳定 code",
+        "HTTP 请求合并 attributionHeaders() 并转发 signal"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "fiber-diagnosis",
+      "prompt": "我的 DSH 插件声明了 inject: ['timer'] 但启动后什么都不打印，也不报错。写一个诊断插件：遍历 ctx.registry 检查所有 fiber，把 FiberState.PENDING 的插件名打印出来，并解释这种'静默不加载'现象的原因和排查步骤。",
+      "expected_output": "",
+      "files": [],
+      "assertions": [
+        "从 @deepseek-ai/cordis 导入 FiberState",
+        "遍历 ctx.registry 的 fiber",
+        "检查 fiber.state === FiberState.PENDING",
+        "打印 PENDING 插件的 name",
+        "解释 PENDING 是合法状态（inject 服务无提供方）",
+        "给出排查步骤（添加提供方插件行）"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "permission-gate-hook",
+      "prompt": "写一个 DSH 权限门禁钩子插件：监听 tools/pre-execute 事件，对 name 以 'bash' 开头的工具调用返回 deny 决策，其余调用 next() 放行；同时说明 ctx.tools.guard() 与 tools/pre-execute 的区别。",
+      "expected_output": "",
+      "files": [],
+      "assertions": [
+        "监听 tools/pre-execute 事件",
+        "返回类型化决策（deny 带 reason）",
+        "放行路径调用 next()",
+        "使用 ctx.on 注册监听",
+        "正确说明 guard() 是单调最终拒绝、pre-execute 是可重排 waterfall"
       ]
     }
   ]

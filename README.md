@@ -8,12 +8,13 @@
 
 DSH 插件是一个导出 `apply(ctx)` 函数的 TypeScript 模块，通过 Cordis 的 `Context` 注册工具、事件监听、定时器、服务等能力。本技能让代理无需联网查文档即可按官方约定开发插件，覆盖：
 
-- **插件形态**：函数 / 对象 / 类三种写法，`inject` 依赖注入，`ctx.effect()` 生命周期清理
-- **工具开发**：`defineTool` DSL（参数 schema、规范值、render、后台任务、UI 卡片契约）
-- **插件配置**：`Config` 类型 + Schemastery schema（默认值、严格校验、设计原则）
-- **事件系统**：`emit` / `bail` / `serial` / `waterfall` 四种模式、类型化事件
-- **服务与依赖**：`Service` 类、声明合并、服务隔离
-- **打包发布**：bundle / profile 概念、`dsh plugin add`、配置层序、Git 安装陷阱
+- **插件形态**：函数 / 对象 / 类三种写法，`inject` 依赖注入，`ctx.effect()` 生命周期清理，Fiber 状态机
+- **工具开发**：`defineTool` DSL（参数 schema、规范值、render、后台任务、策略钩子、UI 卡片、Code Mode）
+- **插件配置**：`Config` 类型 + Schemastery schema（默认值、严格校验、`!!js` 计算值、设计原则）
+- **事件系统**：`emit` / `parallel` / `serial` / `bail` / `waterfall` 五种模式、类型化事件
+- **服务与依赖**：`Service` 类、声明合并、服务隔离、能力分层（Definition / Provider / Consumer）
+- **LLM 适配器**：`LlmAdapter`、`StreamChunk` 协议、`registerAdapter`
+- **打包发布**：bundle / profile 概念、`dsh plugin add`、配置层序、cmdline 服务、Git 安装陷阱
 
 ## 目录结构
 
@@ -24,12 +25,18 @@ create-dsh-plugin/
 │   └── evals.json              # 评估用例（带断言）
 └── references/                 # 官方文档原文（按需加载）
     ├── basic.md                # 第一个插件教程
+    ├── framework.md            # 生命周期、Fiber 状态机、HMR
     ├── tool.md                 # 工具 DSL 基础
     ├── tool-authoring.md       # 工具编写完整契约
+    ├── subsystems-tools.md     # 工具注册表 API 与 tools/* 事件签名
     ├── config.md               # 插件配置与 schema 校验
-    ├── events.md               # 事件系统
+    ├── events.md               # 事件系统（五种模式）
     ├── service.md              # 服务与依赖
-    └── publish.md              # 打包与安装
+    ├── practice.md             # 能力分层三包模式
+    ├── llm-adapter.md          # LLM 适配器
+    ├── publish.md              # 打包与安装
+    ├── cordis-primer.md        # Cordis 核心概念
+    └── extension-cookbook.md   # 钩子/UI/协议驱动扩展形态
 ```
 
 ## 安装
@@ -52,6 +59,7 @@ git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\s
 
 - "帮我在项目里创建一个 DSH 插件，给模型加一个 `current_time` 工具"
 - "写一个监听 `tools/result` 事件、可配置截断长度的日志插件"
+- "接一个新的模型提供方（LLM 适配器）"
 - "把这个插件打包成可安装的 DSH bundle"
 
 代理会按 SKILL.md 中的工作流产出：插件源码 + `cordis.yml` 覆盖层 + 启动/验证命令。
@@ -59,7 +67,7 @@ git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\s
 ## 文档来源
 
 - 官方文档：<https://deepseek-harness.github.io/deepseek-harness/develop/basic/>
-- 源码仓库：<https://github.com/deepseek-ai/deepseek-harness>（`docs/user/develop/**` 与 `docs/cookbook/adding-a-tool.md`）
+- 源码仓库：<https://github.com/deepseek-ai/deepseek-harness>（`docs/user/develop/**`、`docs/cookbook/**`、`docs/subsystems/*` 等）
 
 `references/` 中的文件是上述官方文档对应页面的原文副本（英文版；中文版在同一路径加 `.zh`）。如与在线文档冲突，以在线文档为准。
 

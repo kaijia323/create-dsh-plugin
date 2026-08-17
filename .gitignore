@@ -2,3 +2,6 @@
 .DS_Store
 Thumbs.db
 *.swp
+
+# eval scratch / temp fetch scripts
+.tmp/
