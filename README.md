@@ -49,10 +49,10 @@ create-dsh-plugin/
 
 ```sh
 # macOS / Linux
-git clone git@github.com:kaijia323/create-dsh-plugin.git ~/.agents/skills/create-dsh-plugin
+git clone https://github.com/kaijia323/create-dsh-plugin.git ~/.agents/skills/create-dsh-plugin
 
 # Windows
-git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\skills\create-dsh-plugin
+git clone https://github.com/kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\skills\create-dsh-plugin
 ```
 
 重启会话后，代理在遇到"创建 DSH 插件 / 给模型加工具 / 写 cordis.yml / 打包 bundle / 给 DSH 加设置卡片、侧边栏、模态窗或前端页面"等请求时会自动加载本技能。
