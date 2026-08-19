@@ -98,6 +98,57 @@
         "使用 ctx.on 注册监听",
         "正确说明 guard() 是单调最终拒绝、pre-execute 是可重排 waterfall"
       ]
+    },
+    {
+      "id": 7,
+      "name": "client-ui-slot-discovery-and-right-panel",
+      "prompt": "我想给 DSH 插件加一个右侧栏，用来展示当前工作区的 git 提交记录和文件树。我不清楚 DSH Web 客户端提供哪些扩展点（slot），有些可能根本没有，我该怎么查、没有现成 slot 时怎么做？给我方案和关键代码。",
+      "expected_output": "说明用 ctx.slots.snapshot() / spec() / inject() 查询当前版本的 slot 清单；指出 details 是唯一的右列 single 槽、接管即替换内置工具详情面板，并给出 ctx.layout.openDetails() 配合 conversation.session.header.actions 触发按钮的代码；给出 shell.overlay 浮出面板和 conversation.view 新 tab 两个不破坏原生结构的替代方案及取舍；强调 React 组件契约、不要 DOM hack。",
+      "files": [],
+      "assertions": [
+        "提到 ctx.slots.snapshot() 作为运行时查询 slot 的方法",
+        "提到 spec() 探测或 slots.inject() 等待 slot 声明",
+        "指出 details 是右列 single 槽、注册即替换内置工具详情面板",
+        "给出 details 槽注册代码 ctx.slots.register({name:'details'}, ...)",
+        "给出打开右列方式 ctx.layout.openDetails() 与触发按钮",
+        "给出 shell.overlay 作为不替换原生面板的替代方案",
+        "提到 conversation.view 可加新 tab 的第三种方案",
+        "说明 slot 渲染契约是 React 组件",
+        "明确不要 DOM hack 并给出原因"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "client-ui-settings-card",
+      "prompt": "我要给 DSH 插件做一个配置页面，要求显示在 DSH 设置里、插件自己的卡片能改配置。前端这半怎么写、怎么打包成 dsh.client 客户端插件？给出完整步骤和关键代码。",
+      "expected_output": "给出 Host half（installSettingsSection + settingsNamespace）与 browser half 两半配对；browser half 用 ctx.slots.inject('settings.plugin.item') 注册 keyed 条目（key=namespace），通过 ctx.settingsScope.bind 读写配置并带 revision 栅栏；package.json 声明 exports[./client] 与 dsh.client { platform: 'web', inject: [...] }，指出产物必须是 lazy-CJS bundle、React 由宿主提供（peer dependency）、bundle-purity gate 禁止跨插件 value import。",
+      "files": [],
+      "assertions": [
+        "包含 Host half：installSettingsSection 与 settingsNamespace",
+        "Browser half 使用 ctx.slots.inject('settings.plugin.item', ...)",
+        "keyed 注册的 key 等于 settings namespace",
+        "通过 ctx.settingsScope.bind({namespace}) 读写配置",
+        "提到写操作带 revision 栅栏",
+        "package.json exports 声明 './client' 导出",
+        "package.json dsh.client 声明 platform: 'web' 与 inject 列表",
+        "指出 React 是 peer dependency、由宿主提供",
+        "提到 bundle-purity gate 禁止跨插件 value import",
+        "提到 ./client 产物是 lazy-CJS bundle"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "client-ui-modal-fallback",
+      "prompt": "我需要在 DSH 里弹一个模态窗显示插件状态，但找了一圈没看到专门的 modal slot。怎么办？会不会只能用 DOM hack 往 React 里插？",
+      "expected_output": "指出 shell.overlay 就是官方浮层兜底位（list/root，纯追加），给出注册代码（唯一 id + 外层 pointer-events:none、内容 auto 的 click-through 模式）；说明 composer 内弹层用 conversation.input.overlay；明确不要 MutationObserver/document.body DOM hack 并解释原因；顺带说明 slot 渲染契约是 React 组件。",
+      "files": [],
+      "assertions": [
+        "指出 shell.overlay 是浮层/模态的官方兜底位",
+        "说明 shell.overlay 是 list 槽、注册需要唯一 id",
+        "给出 click-through 处理（外层 pointer-events:none、内容 auto）",
+        "明确不推荐 DOM hack 并解释原因（React reconciliation / HMR / 生命周期）",
+        "说明 slot 组件契约是 React 组件"
+      ]
     }
   ]
 }

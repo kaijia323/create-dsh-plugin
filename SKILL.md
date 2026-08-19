@@ -1,6 +1,6 @@
 ---
 name: create-dsh-plugin
-description: 创建、开发、调试、打包 DeepSeek Harness（DSH）插件。当用户想要给 DSH 添加新能力——写插件、开发工具（tool）、注册事件监听、提供或消费服务（service）、写 LLM 适配器（adapter）、让插件接受配置、写 cordis.yml / cordis.patch.yml、运行 `dsh web --patch`、`dsh plugin add`、打包发布 bundle——都使用本技能。用户提到 "DSH 插件"、"harness 插件"、"给模型加个工具"、"插件要支持配置"、"监听 xxx 事件"、"扩展 DSH 能力"、"接一个新的模型提供方" 时一定要用；即使没有明说 "插件"，只要目标是扩展 DSH 的能力（新工具、钩子、命令、后台任务、模型适配器），也用本技能。
+description: 创建、开发、调试、打包 DeepSeek Harness（DSH）插件。当用户想要给 DSH 添加新能力——写插件、开发工具（tool）、注册事件监听、提供或消费服务（service）、写 LLM 适配器（adapter）、让插件接受配置、写 cordis.yml / cordis.patch.yml、运行 `dsh web --patch`、`dsh plugin add`、打包发布 bundle——都使用本技能。用户提到 "DSH 插件"、"harness 插件"、"给模型加个工具"、"插件要支持配置"、"监听 xxx 事件"、"扩展 DSH 能力"、"接一个新的模型提供方" 时一定要用；即使没有明说 "插件"，只要目标是扩展 DSH 的能力（新工具、钩子、命令、后台任务、模型适配器），也用本技能。用户要给 DSH 加前端页面或 UI 扩展时更要用——插件设置卡片、会话节点、侧边栏/右侧栏、模态窗/浮层、Web Client slot、`dsh.client` 客户端插件，即使只说 "前端页面"、"UI 插件"、"加个面板"、"侵入 DSH 界面"，都用本技能。
 ---
 
 # Create DSH Plugin
@@ -300,6 +300,36 @@ export default class MetricsService extends Service {
 
 提供方可替换：换 provider 时 Definition 和 Consumer 都不变。不要预防性拆分——只有角色需要独立演进时才拆包，简单工具插件无需拆分。完整的 Bash 三包示例见 references/practice.md。
 
+## 客户端 UI 扩展（往 DSH Web Client 注入前端页面）
+
+先分清用户要哪种前端介入：
+
+- **内嵌 Web Client**（设置卡片、会话节点、侧栏按钮、右侧栏、模态窗/浮层、新视图 tab）：走 `dsh.client` 浏览器插件 + **slot 体系**。slot 渲染契约是 **React 组件**（宿主提供 React，插件 bundle 不携带 React，所以"React 重"在这里不成立）。
+- **插件自带独立页面 / 外部 UI**：监听 `session/event` 渲染、用 `agent.followup()` 驱动输入，前端栈自由；见 references/extension-cookbook.md。
+
+内嵌路径的骨架：
+
+```ts
+import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+
+export const name = 'my-ui'
+export const inject = ['slots']  // session 级组件还要 useSession 等标准 props
+
+export function apply(ctx: ClientContext) {
+  ctx.slots.register({ name: 'shell.overlay', id: 'my-panel' }, MyPanel)
+}
+```
+
+要点速记（完整契约、slot 清单、配方见 references/client-ui.md）：
+
+- **四种 kind**：`single`（注册即整体替换原生区域）、`list`（追加，需唯一 `id`）、`keyed`（按 `key` 分发，需 `key`）、`chain`（`select` 选举式接管）。
+- **查 slot 别靠背清单**：`ctx.slots.snapshot()` 导出当前版本的完整 slot 树；`ctx.slots.spec(key)` 探测存在性；`ctx.slots.inject(key, cb)` 等待运行时才声明的 slot。向未声明的 slot `register` 会抛错。
+- **万能兜底位 `shell.overlay`**（list/root）：模态窗、浮出面板、toast 都放这，纯追加、不影响原生结构；整层默认 click-through，自己开 pointer-events。
+- **"侵入原生结构" = 接管 single 槽**（如右列 `details`、左列 `sidebar`），插件卸载后原生 UI 自动恢复；代价是被替换者声明的子槽失效。不要 MutationObserver/DOM hack。
+- **客户端插件必须打包**：package.json 声明 `dsh.client`（platform web + inject 列表），`./client` 导出 lazy-CJS bundle；跨插件 value import 被 bundle-purity gate 拒绝。
+- 状态管理推荐薄 React 视图 + `@preact/signals-core`；Alpine 在 React 宿主里不可用，Preact 组件属非官方 interop。
+- 官方 cookbook 原文：references/client-settings-card.md（设置卡片）、references/client-conversation-node.md（会话业务行）。
+
 ## LLM 适配器（接入新模型提供方）
 
 继承 `LlmAdapter` 并实现 `stream()`，把 Harness 提供方无关的请求转成具体 API 调用，再把响应转回 Harness 分片：
@@ -395,6 +425,11 @@ export function apply(ctx: Context, config: Config) {
 8. 插件不加载也不报错：先查 fiber 状态——多半是 `inject` 的服务没有提供方（PENDING 是合法状态）。
 9. `!!js` 只用于 `config` 值和条目的 `disabled` 字段，其他地方是普通字面数据。
 10. 后台任务发布后用任务自己的取消信号，不要继续用 `exec.signal`（外层取消只会停止等待，不会杀已发布的任务）。
+11. 向未声明的 slot `register` 会抛错：slot 由占用者运行时声明，先 `ctx.slots.spec()` 探测或用 `ctx.slots.inject()` 等待。
+12. 永远不要注册 `root` slot——会把整页 shadow 成只有你的组件。
+13. single 槽是替换不是追加；`sidebar`/`conversation`/`details` 接管后，被替换者声明的子槽随之失效。
+14. list 槽缺 `id`、keyed 槽缺 `key`、chain 槽缺 `select` 都在加载时抛错；同 cell 同优先级重复注册也抛错。
+15. 客户端 UI 插件 bundle 之间禁止 value import（bundle-purity gate）；value-import `@deepseek-ai/dsh-client-runtime` 必须用 `/client` 子路径。
 
 ## 参考文件（官方文档原文，按需读取）
 
@@ -413,3 +448,6 @@ export function apply(ctx: Context, config: Config) {
 | references/publish.md | 打包 bundle、profile 安装、层序、cmdline 服务、Git 安装陷阱 | 发布插件时 |
 | references/cordis-primer.md | Cordis 核心概念、五种分发模式、Loader 配置 | 想深入理解底层框架时 |
 | references/extension-cookbook.md | 扩展插件形态：钩子插件、UI 插件、协议驱动、功能→机制映射 | 做钩子/UI/集成或找扩展点时 |
+| references/client-ui.md | 客户端 UI 扩展总纲：dsh.client 打包契约、slot 心智模型、slot 查询方法、rc.7 槽位清单、配方（浮层/右栏/按钮/工具卡片）、无 slot 时的阶梯策略 | 任何"给 DSH 加前端页面/UI 扩展"的需求 |
+| references/client-settings-card.md | 官方 cookbook 原文：设置卡片两半实现与打包 | 做插件配置设置卡片时 |
+| references/client-conversation-node.md | 官方 cookbook 原文：会话业务行（ConversationNodeDefinition） | 在会话流里加可回放业务行时 |
