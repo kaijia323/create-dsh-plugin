@@ -14,6 +14,7 @@ DSH 插件是一个导出 `apply(ctx)` 函数的 TypeScript 模块，通过 Cord
 - **事件系统**：`emit` / `parallel` / `serial` / `bail` / `waterfall` 五种模式、类型化事件
 - **服务与依赖**：`Service` 类、声明合并、服务隔离、能力分层（Definition / Provider / Consumer）
 - **LLM 适配器**：`LlmAdapter`、`StreamChunk` 协议、`registerAdapter`
+- **客户端 UI 扩展**：`dsh.client` 打包契约、slot 体系（single / list / keyed / chain 与 scope）、slot 查询方法、槽位清单、设置卡片 / 会话节点 / 模态浮层 / 右栏等配方
 - **打包发布**：bundle / profile 概念、`dsh plugin add`、配置层序、cmdline 服务、Git 安装陷阱
 
 ## 目录结构
@@ -36,7 +37,10 @@ create-dsh-plugin/
     ├── llm-adapter.md          # LLM 适配器
     ├── publish.md              # 打包与安装
     ├── cordis-primer.md        # Cordis 核心概念
-    └── extension-cookbook.md   # 钩子/UI/协议驱动扩展形态
+    ├── extension-cookbook.md   # 钩子/UI/协议驱动扩展形态
+    ├── client-ui.md            # 客户端 UI 扩展总纲（slot 体系与槽位清单）
+    ├── client-settings-card.md # 官方 cookbook：插件设置卡片
+    └── client-conversation-node.md # 官方 cookbook：会话业务行
 ```
 
 ## 安装
@@ -51,7 +55,7 @@ git clone git@github.com:kaijia323/create-dsh-plugin.git ~/.agents/skills/create
 git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\skills\create-dsh-plugin
 ```
 
-重启会话后，代理在遇到"创建 DSH 插件 / 给模型加工具 / 写 cordis.yml / 打包 bundle"等请求时会自动加载本技能。
+重启会话后，代理在遇到"创建 DSH 插件 / 给模型加工具 / 写 cordis.yml / 打包 bundle / 给 DSH 加设置卡片、侧边栏、模态窗或前端页面"等请求时会自动加载本技能。
 
 ## 使用方式
 
@@ -60,6 +64,8 @@ git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\s
 - "帮我在项目里创建一个 DSH 插件，给模型加一个 `current_time` 工具"
 - "写一个监听 `tools/result` 事件、可配置截断长度的日志插件"
 - "接一个新的模型提供方（LLM 适配器）"
+- "在 DSH 设置页里给插件加一张配置卡片"
+- "在 Web 客户端加一个右侧栏显示 git log 和文件树，该注册哪个 slot？"
 - "把这个插件打包成可安装的 DSH bundle"
 
 代理会按 SKILL.md 中的工作流产出：插件源码 + `cordis.yml` 覆盖层 + 启动/验证命令。
@@ -73,7 +79,29 @@ git clone git@github.com:kaijia323/create-dsh-plugin.git %USERPROFILE%\.agents\s
 
 ## 测试与评估
 
-`evals/evals.json` 包含 6 个评估用例（工具插件 / 事件日志插件 / bundle 打包 / LLM 适配器 / Fiber 诊断 / 权限门禁钩子），每个用例都有可程序化检查的断言。
+`evals/evals.json` 包含 9 个评估用例（工具插件 / 事件日志插件 / bundle 打包 / LLM 适配器 / Fiber 诊断 / 权限门禁钩子 / 客户端 slot 查询与右栏 / 设置卡片 / 模态窗兜底），每个用例都有可程序化检查的断言。
+
+### iteration-3 结果（3 个新增 UI 扩展用例 × 24 条断言 × 2 配置 = 48 项检查，新技能 vs 旧版快照）
+
+| 指标 | with_skill（新版） | old_skill（快照） | 差异 |
+|---|---|---|---|
+| 断言通过率 | 100% (24/24) | 79% (19/24) | **+21%** |
+
+按用例：
+
+| 用例 | with_skill | old_skill |
+|---|---|---|
+| eval-7 右侧栏 + slot 查询 | 9/9 | 4/9 |
+| eval-8 设置卡片打包 | 10/10 | 10/10 |
+| eval-9 模态窗兜底 | 5/5 | 5/5 |
+
+要点：
+
+- 核心差距在 eval-7：旧版技能缺少 `ctx.slots.snapshot()` / `spec()` / `inject()` 查询法、`details` 接管代码、`ctx.layout.openDetails()`、React 渲染契约与 DOM hack 理由；新版 `references/client-ui.md` 全部覆盖。
+- eval-8 无区分度：基线代理可直接读本机安装的 `dsh-client-ui-settings-plugins` 包类型与 README。
+- eval-9 首轮有一条偏窄断言（要求提及 `conversation.input.overlay`），按评审反馈删除后两配置均 5/5。
+- 本轮环境未采集 token / 耗时指标（子代理完成通知不携带），故只报告断言通过率。
+- 评审页面见同目录的 `create-dsh-plugin-workspace/iteration-1/review.html`（未包含在本仓库中）。
 
 ### iteration-2 结果（44 条断言 × 2 配置 = 88 项检查，新技能 vs 旧版快照）
 
